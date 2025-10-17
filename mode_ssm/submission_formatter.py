@@ -166,10 +166,10 @@ class SubmissionFormatter:
             prev_key = current_key
 
     def to_dataframe(self) -> pd.DataFrame:
-        """Convert records to pandas DataFrame"""
+        """Convert records to pandas DataFrame in competition format (id, text)"""
         if not self.records:
             # Return empty DataFrame with correct columns
-            return pd.DataFrame(columns=['session', 'block', 'trial', 'prediction'])
+            return pd.DataFrame(columns=['id', 'text'])
 
         data = [record.to_dict() for record in self.records]
         df = pd.DataFrame(data)
@@ -180,7 +180,12 @@ class SubmissionFormatter:
         df['trial'] = df['trial'].astype(int)
         df['prediction'] = df['prediction'].astype(str)
 
-        return df
+        # Create competition format: id (0 to n-1) and text columns
+        df['id'] = range(len(df))
+        df['text'] = df['prediction']
+
+        # Return only the required columns in correct order
+        return df[['id', 'text']]
 
     def to_csv_string(self) -> str:
         """Convert to CSV string"""
@@ -312,37 +317,36 @@ def validate_submission_format(filepath: Union[str, Path]) -> Tuple[bool, List[s
         errors.append(f"Cannot read CSV file: {str(e)}")
         return False, errors
 
-    # Check required columns
-    required_columns = ['session', 'block', 'trial', 'prediction']
+    # Check required columns (competition format)
+    required_columns = ['id', 'text']
     missing_columns = [col for col in required_columns if col not in df.columns]
     if missing_columns:
         errors.append(f"Missing required columns: {missing_columns}")
 
     # Check data types
     try:
-        df['session'] = df['session'].astype(str)
-        df['block'] = pd.to_numeric(df['block'], errors='raise').astype(int)
-        df['trial'] = pd.to_numeric(df['trial'], errors='raise').astype(int)
-        df['prediction'] = df['prediction'].astype(str)
+        df['id'] = pd.to_numeric(df['id'], errors='raise').astype(int)
+        df['text'] = df['text'].astype(str)
     except Exception as e:
         errors.append(f"Invalid data type in CSV: {str(e)}")
 
     # Check for empty predictions
-    empty_mask = (df['prediction'].isna()) | (df['prediction'] == '') | (df['prediction'].str.strip() == '')
+    empty_mask = (df['text'].isna()) | (df['text'] == '') | (df['text'].str.strip() == '')
     if empty_mask.any():
         empty_indices = df[empty_mask].index.tolist()
         errors.append(f"Empty predictions at rows: {empty_indices}")
 
-    # Check for duplicate entries
-    duplicates = df.duplicated(subset=['session', 'block', 'trial'])
+    # Check for duplicate IDs
+    duplicates = df.duplicated(subset=['id'])
     if duplicates.any():
         duplicate_indices = df[duplicates].index.tolist()
-        errors.append(f"Duplicate entries at rows: {duplicate_indices}")
+        errors.append(f"Duplicate IDs at rows: {duplicate_indices}")
 
-    # Check chronological order
-    is_ordered, order_error = ensure_chronological_order(df)
-    if not is_ordered:
-        errors.append(order_error)
+    # Check that IDs are sequential from 0 to n-1
+    expected_ids = list(range(len(df)))
+    actual_ids = df['id'].tolist()
+    if actual_ids != expected_ids:
+        errors.append(f"IDs must be sequential from 0 to {len(df)-1}, got: {actual_ids[:10]}...")
 
     return len(errors) == 0, errors
 
