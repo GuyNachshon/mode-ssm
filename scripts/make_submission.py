@@ -138,18 +138,37 @@ class SubmissionGenerator:
 
     def load_test_data(self):
         """Load test dataset"""
-        logger.info(f"Loading test data from: {self.config.data.test_path}")
 
-        # Create test dataset
-        test_dataset = Brain2TextDataset(
-            hdf5_path=self.config.data.test_path,
-            min_sequence_ms=self.config.data.min_sequence_ms,
-            max_sequence_ms=self.config.data.max_sequence_ms,
-            missing_channel_threshold=self.config.data.missing_channel_threshold,
-            cache_data=self.config.data.cache_data,
-            transform=None,  # No augmentation for inference
-            filter_quality=self.config.data.filter_quality
-        )
+        # Check if using multi-session mode or single file
+        if hasattr(self.config.data, 'data_root') and self.config.data.data_root:
+            # Multi-session mode: load all test files
+            from datasets.multi_session_dataset import MultiSessionDataset, collect_session_files
+
+            logger.info(f"Loading test data from multiple sessions: {self.config.data.data_root}")
+            test_files = collect_session_files(self.config.data.data_root, "test")
+            logger.info(f"Found {len(test_files)} test files")
+
+            dataset_kwargs = {
+                'min_sequence_ms': self.config.data.min_sequence_ms,
+                'max_sequence_ms': self.config.data.max_sequence_ms,
+                'missing_channel_threshold': self.config.data.missing_channel_threshold,
+                'cache_data': self.config.data.cache_data,
+                'filter_quality': self.config.data.filter_quality
+            }
+
+            test_dataset = MultiSessionDataset(session_paths=test_files, transform=None, **dataset_kwargs)
+        else:
+            # Single file mode
+            logger.info(f"Loading test data from: {self.config.data.test_path}")
+            test_dataset = Brain2TextDataset(
+                hdf5_path=self.config.data.test_path,
+                min_sequence_ms=self.config.data.min_sequence_ms,
+                max_sequence_ms=self.config.data.max_sequence_ms,
+                missing_channel_threshold=self.config.data.missing_channel_threshold,
+                cache_data=self.config.data.cache_data,
+                transform=None,  # No augmentation for inference
+                filter_quality=self.config.data.filter_quality
+            )
 
         logger.info(f"Test dataset: {len(test_dataset)} samples")
 
