@@ -1,0 +1,60 @@
+# Neural Drift Analysis Configuration
+# Configuration for analyzing neural signal drift patterns and TTA effectiveness
+
+defaults:
+  - model_mode_ssm
+  - _self_
+
+# Data configuration
+data:
+  dataset_path: "data/validation.h5"  # Dataset to analyze for drift
+
+# Model configuration (for TTA effectiveness analysis)
+model_analysis:
+  enabled: true  # Whether to load model for analysis
+
+# Checkpoint configuration
+checkpoint:
+  dir: "checkpoints"
+  path: null  # Path to specific checkpoint for analysis
+
+# Analysis configuration
+analysis:
+  filter_quality: true  # Filter low-quality samples
+  min_samples_per_session: 5  # Minimum samples needed per session
+  drift_window_size: 10  # Window size for drift analysis
+  global_drift_window_size: 20  # Window size for global drift analysis
+  generate_plots: true  # Generate visualization plots
+
+# TTA effectiveness analysis
+tta_analysis:
+  enabled: true  # Whether to analyze TTA effectiveness
+  batch_size: 4  # Batch size for TTA analysis
+  max_batches: 50  # Maximum batches to analyze (for speed)
+
+# TTA configuration for effectiveness testing
+tta_config:
+  session_adaptation_enabled: true
+  entropy_minimization_enabled: true
+  adaptation_lr: 0.001
+  adaptation_steps: 3
+  statistics_momentum: 0.9
+  entropy_threshold: 2.0
+  entropy_weight: 0.5
+  min_samples_for_adaptation: 5
+  adaptation_layers: ["preprocessor"]
+  confidence_threshold: 0.8
+  max_adaptation_steps_per_session: 20
+  adaptation_warmup_samples: 3
+
+# Output configuration
+output:
+  dir: "analysis_results"
+  save_raw_results: true
+  generate_summary: true
+
+# Logging
+logging:
+  level: INFO
+  save_logs: true
+  log_file: "logs/neural_drift_analysis.log"

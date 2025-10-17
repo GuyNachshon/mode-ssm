@@ -1,0 +1,92 @@
+# Test-Time Adaptation configuration for MODE-SSM
+defaults:
+  - _self_
+
+# TTA Algorithm settings
+tta:
+  enabled: true
+  method: "cycle_gan"  # "cycle_gan", "entropy_min", "feature_norm"
+
+  # Session-level adaptation
+  session_adaptation:
+    enabled: true
+    update_statistics: true
+    momentum: 0.1  # EMA momentum for running stats
+
+  # Entropy minimization
+  entropy_minimization:
+    enabled: true
+    num_steps: 5
+    learning_rate: 1e-5
+    update_components: ["layer_norm", "final_encoder"]
+    batch_size: 16
+
+  # Feature normalization
+  feature_normalization:
+    enabled: true
+    per_channel: true
+    momentum: 0.05
+
+  # Domain adaptation (Cycle-GAN based)
+  domain_adaptation:
+    enabled: false  # Requires pre-trained domain transfer model
+    model_path: null
+    adaptation_strength: 0.5
+
+# Adaptation targets
+adaptation:
+  # Which model components to adapt
+  components:
+    preprocessor:
+      normalization_stats: true
+      channel_weights: false
+    encoder:
+      layer_norm: true
+      final_layer: true
+      all_layers: false
+    mode_head:
+      enabled: false
+    decoders:
+      enabled: false
+
+# Session handling
+session:
+  # Session detection and grouping
+  auto_detect_sessions: true
+  session_boundary_threshold: 3600  # seconds
+  min_trials_per_session: 10
+
+  # Session-specific statistics
+  track_quality_drift: true
+  track_mode_distribution: true
+  track_sequence_length_drift: true
+
+# Performance monitoring
+monitoring:
+  track_adaptation_metrics: true
+  log_before_after_wer: true
+  save_adaptation_history: false
+
+  # Metrics to track
+  metrics:
+    - "session_wer_improvement"
+    - "adaptation_time_ms"
+    - "entropy_reduction"
+    - "feature_drift_magnitude"
+
+# Validation and safety
+validation:
+  # Safety checks for adaptation
+  max_wer_degradation: 2.0  # Stop if WER degrades by more than 2pp
+  min_confidence_threshold: 0.5
+  adaptation_stability_check: true
+
+  # Rollback mechanism
+  enable_rollback: true
+  rollback_threshold: 1.0  # pp WER degradation
+
+# Hardware optimization for TTA
+hardware:
+  use_amp: true  # Automatic mixed precision
+  memory_efficient: true
+  batch_adaptation: true  # Adapt on batches vs individual trials

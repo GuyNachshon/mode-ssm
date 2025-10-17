@@ -1,0 +1,80 @@
+# Submission Generation Configuration
+# Configuration for generating competition submissions from trained models
+
+defaults:
+  - model_mode_ssm
+  - _self_
+
+# Model configuration (inherits from model_mode_ssm.yaml)
+model:
+  # Additional submission-specific model settings
+  inference_mode: true
+
+# Checkpoint configuration
+checkpoint:
+  dir: "checkpoints"
+  path: null  # Path to specific checkpoint, null for auto-selection
+  use_best: true  # Use best checkpoint by validation metric
+
+# Data configuration for test set
+data:
+  test_path: "data/test.h5"
+  min_sequence_ms: 100
+  max_sequence_ms: 4000
+  missing_channel_threshold: 0.1
+  cache_data: false  # Don't cache test data to save memory
+  num_workers: 4
+  filter_quality: true
+
+# Inference configuration
+inference:
+  batch_size: 8  # Smaller batch for inference
+  decode_mode: "beam_search"  # greedy, beam_search
+  beam_size: 5
+  max_decode_length: 200
+  use_amp: true  # Automatic mixed precision
+  show_progress: true
+
+# Submission formatting
+submission:
+  convert_phonemes_to_text: true  # Convert phonemes to approximate text
+  validate_format: true
+  validate_order: true
+  validate_submission: true  # Final validation of generated CSV
+
+# Output configuration
+output:
+  dir: "submissions"
+  filename: null  # Auto-generate timestamp-based filename if null
+
+# Logging
+logging:
+  level: INFO
+  save_logs: true
+  log_file: "logs/submission_generation.log"
+
+# Hardware settings
+device: "cuda"  # cuda, cpu, auto
+memory_optimization: true
+torch_compile: false  # Enable torch.compile for A100+ GPUs
+
+# Test-Time Adaptation (TTA) settings
+tta:
+  enabled: false  # Enable TTA during submission generation
+  session_adaptation_enabled: true
+  entropy_minimization_enabled: true
+  adaptation_lr: 0.001
+  adaptation_steps: 5
+  statistics_momentum: 0.95
+  entropy_threshold: 1.8
+  entropy_weight: 0.3
+  min_samples_for_adaptation: 8
+  adaptation_layers: ["preprocessor"]
+  confidence_threshold: 0.85
+
+# Competition-specific settings
+competition:
+  name: "Brain-to-Text 2025"
+  format_version: "1.0"
+  required_columns: ["session", "block", "trial", "prediction"]
+  chronological_ordering: true

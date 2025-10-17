@@ -1,0 +1,162 @@
+# Main training configuration for MODE-SSM
+defaults:
+  - _self_
+  - model_mode_ssm
+  - logging
+
+# Training stages and curriculum
+training:
+  # Multi-stage curriculum
+  stages:
+    - name: "ctc_warmup"
+      epochs: 10
+      components: ["preprocessor", "encoder", "ctc_decoder"]
+      loss_weights:
+        ctc: 1.0
+        rnnt: 0.0
+        mode: 0.0
+        denoise: 0.0
+
+    - name: "joint_train"
+      epochs: 15
+      components: ["preprocessor", "encoder", "ctc_decoder", "rnnt_decoder"]
+      loss_weights:
+        ctc: 0.3
+        rnnt: 1.0
+        mode: 0.0
+        denoise: 0.0
+
+    - name: "mode_train"
+      epochs: 10
+      components: ["preprocessor", "encoder", "ctc_decoder", "rnnt_decoder", "mode_head"]
+      loss_weights:
+        ctc: 0.3
+        rnnt: 1.0
+        mode: 0.1
+        denoise: 0.0
+
+    - name: "denoise_train"
+      epochs: 5
+      components: ["preprocessor", "encoder", "ctc_decoder", "rnnt_decoder", "mode_head", "flow_bridge"]
+      loss_weights:
+        ctc: 0.3
+        rnnt: 1.0
+        mode: 0.1
+        denoise: 0.05
+
+  # Optimization
+  optimizer:
+    name: AdamW
+    lr: 2e-4
+    weight_decay: 0.05
+    betas: [0.9, 0.98]
+    eps: 1e-8
+
+  # Learning rate scheduling
+  scheduler:
+    name: cosine_with_warmup
+    warmup_steps: 5000
+    max_steps: 100000
+    min_lr_ratio: 0.01
+
+  # Training parameters
+  batch_size: 32
+  gradient_accumulation_steps: 4
+  max_grad_norm: 1.0
+  mixed_precision: true
+  deterministic: true
+
+  # Validation and checkpointing
+  val_check_interval: 0.5  # Check twice per epoch
+  val_batch_size: 16
+  save_top_k: 3
+  early_stopping_patience: 3
+  early_stopping_metric: "val_wer"
+  early_stopping_mode: "min"
+
+  # Hardware settings
+  num_gpus: 2
+  num_workers: 8
+  pin_memory: true
+  persistent_workers: true
+
+# Data configuration
+data:
+  # Single-session mode (use train_path/val_path/test_path)
+  train_path: "data/t15_train.hdf5"
+  val_path: "data/t15_val.hdf5"
+  test_path: "data/t15_test.hdf5"
+
+  # Multi-session mode (use data_root to load all sessions)
+  # When data_root is set, train_path/val_path are ignored
+  data_root: null  # Set to directory with session folders to enable multi-session
+  max_sessions: null  # Optional: limit number of sessions (null = all)
+
+  # Data loading
+  num_workers: 8
+  cache_data: false
+  use_length_bucketing: false
+
+  # Data validation
+  min_sequence_ms: 50
+  max_sequence_ms: 30000
+  missing_channel_threshold: 0.1
+
+# Augmentation configuration
+augmentation:
+  enabled: false  # Disable by default for faster training
+  temporal_masking:
+    enabled: true
+    mask_prob: 0.1
+    max_mask_len: 40  # ms
+  time_warping:
+    enabled: true
+    warp_factor: 0.1
+  noise_injection:
+    enabled: true
+    noise_std: 0.05
+
+# Reproducibility
+random_seed: 42
+deterministic: true
+
+# Monitoring and logging
+monitoring:
+  log_every_n_steps: 100
+  val_sanity_checks: 2
+  track_grad_norm: true
+
+  # Metrics to track
+  metrics:
+    - "train_loss"
+    - "val_loss"
+    - "val_wer"
+    - "mode_accuracy"
+    - "gpu_memory_mb"
+    - "step_time_ms"
+
+# Weights & Biases configuration
+wandb:
+  enabled: false  # Set to true to enable W&B logging
+  project: "mode-ssm"
+  entity: null  # Set to your W&B username or team name
+  run_name: null  # Auto-generated if null
+  tags:
+    - "brain-to-text"
+    - "ssm"
+    - "rnnt"
+  notes: "MODE-SSM training with curriculum learning"
+
+# Paths
+paths:
+  output_dir: "outputs"
+  log_dir: "logs"
+  checkpoint_dir: "checkpoints"
+
+# Hydra configuration
+hydra:
+  job:
+    name: mode_ssm_training
+    chdir: true
+  run:
+    dir: outputs/${now:%Y-%m-%d_%H-%M-%S}
