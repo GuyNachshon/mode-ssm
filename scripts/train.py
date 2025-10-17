@@ -286,11 +286,12 @@ class Trainer:
 
         # Wrap with DDP if distributed
         if self.distributed:
+            find_unused_params = self.config.training.get('find_unused_parameters', False)
             self.model = DDP(
                 self.model,
                 device_ids=[self.local_rank],
                 output_device=self.local_rank,
-                find_unused_parameters=False
+                find_unused_parameters=find_unused_params
             )
 
     def setup_training_objects(self):
