@@ -70,7 +70,17 @@ class Brain2TextDataset(Dataset):
 
         # Load and validate dataset
         self._load_metadata()
-        self._validate_dataset()
+
+        # Skip validation for test data without quality filtering
+        if self.filter_quality:
+            self._validate_dataset()
+        elif len(self.all_trials) == 0:
+            raise ValueError(f"No trials found in {self.hdf5_path}")
+
+        # For test data without quality filtering, use all trials as valid
+        if not self.filter_quality and len(self.valid_trials) == 0:
+            self.valid_trials = self.all_trials.copy()
+
         self._cache_data_if_enabled()
 
         logger.info(f"Loaded {len(self.valid_trials)} valid trials from {self.hdf5_path}")
