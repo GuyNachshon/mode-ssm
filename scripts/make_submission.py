@@ -122,7 +122,10 @@ class SubmissionGenerator:
         logger.info(f"Model loaded from: {checkpoint_path}")
         if metadata:
             logger.info(f"  Training epoch: {metadata.epoch}")
-            logger.info(f"  Validation WER: {metadata.val_wer:.3f}")
+            if metadata.val_wer is not None:
+                logger.info(f"  Validation WER: {metadata.val_wer:.3f}")
+            else:
+                logger.info(f"  Validation WER: Not available")
             logger.info(f"  Training stage: {metadata.training_stage}")
 
         # Model info
