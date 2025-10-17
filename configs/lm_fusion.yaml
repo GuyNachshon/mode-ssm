@@ -1,0 +1,106 @@
+# Language Model Fusion configuration for MODE-SSM
+defaults:
+  - _self_
+
+# LM Fusion settings
+lm_fusion:
+  enabled: false  # Enable during inference/evaluation
+  fusion_weight: 0.3  # Weight for LM rescoring
+  mode_conditioned: true  # Use mode-specific fusion
+
+# Language models by corpus type
+language_models:
+  # N-gram models
+  ngram:
+    enabled: true
+    order: 4  # 4-gram model
+    smoothing: "kneser_ney"
+    vocab_size: 40
+
+  # Neural language models
+  neural:
+    enabled: false  # Requires separate LM training
+    model_type: "lstm"  # "lstm", "transformer"
+    hidden_size: 256
+    num_layers: 2
+    dropout: 0.1
+
+# Corpus-specific models
+corpus_models:
+  switchboard:
+    enabled: true
+    ngram_path: null  # Path to trained n-gram model
+    weight: 1.0
+
+  openwebtext:
+    enabled: true
+    ngram_path: null
+    weight: 0.8
+
+  harvard_sentences:
+    enabled: true
+    ngram_path: null
+    weight: 1.2  # Higher weight for structured sentences
+
+  custom_vocab:
+    enabled: true
+    ngram_path: null
+    weight: 1.0
+
+# Mode-specific fusion
+mode_conditioning:
+  # Silent vs vocalized mode adaptation
+  silent_mode:
+    lm_weight_multiplier: 1.2  # Rely more on LM for silent speech
+    entropy_threshold: 0.8
+
+  vocalized_mode:
+    lm_weight_multiplier: 0.9  # Rely more on acoustic model
+    entropy_threshold: 0.6
+
+# Decoding parameters
+decoding:
+  # Beam search with LM
+  beam_size: 8
+  length_penalty: 1.0
+  coverage_penalty: 0.0
+
+  # Shallow fusion parameters
+  lm_weight: ${lm_fusion.fusion_weight}
+  word_bonus: 0.0
+
+  # Lattice rescoring (advanced)
+  lattice_rescoring:
+    enabled: false
+    lattice_beam: 16
+    acoustic_scale: 0.1
+
+# Training LM components
+training:
+  # Train corpus-specific n-gram models
+  train_ngram_models: false
+  training_data_paths: []
+
+  # Neural LM training
+  train_neural_lm: false
+  neural_lm_config:
+    batch_size: 64
+    learning_rate: 1e-3
+    max_epochs: 50
+
+# Evaluation and validation
+evaluation:
+  # LM-only perplexity evaluation
+  compute_perplexity: true
+
+  # Ablation studies
+  ablation_studies:
+    no_lm: true
+    lm_only: false
+    different_weights: [0.1, 0.2, 0.3, 0.4, 0.5]
+
+# Performance optimization
+optimization:
+  cache_lm_states: true
+  quantize_lm: false  # Quantize LM for inference speed
+  batch_lm_scoring: true

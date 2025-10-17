@@ -1,0 +1,78 @@
+# Hydra logging configuration for MODE-SSM
+defaults:
+  - _self_
+
+hydra:
+  job:
+    name: mode_ssm_training
+    chdir: false  # Keep in project root for data access
+  run:
+    dir: outputs/${now:%Y-%m-%d_%H-%M-%S}
+  sweep:
+    dir: multirun/${now:%Y-%m-%d_%H-%M-%S}
+    subdir: ${hydra:job.num}
+
+# Python logging configuration
+version: 1
+formatters:
+  simple:
+    format: '[%(asctime)s][%(name)s][%(levelname)s] - %(message)s'
+    datefmt: '%Y-%m-%d %H:%M:%S'
+  detailed:
+    format: '[%(asctime)s][%(name)s][%(levelname)s][%(filename)s:%(lineno)d] - %(message)s'
+    datefmt: '%Y-%m-%d %H:%M:%S'
+
+handlers:
+  console:
+    class: logging.StreamHandler
+    level: INFO
+    formatter: simple
+    stream: ext://sys.stdout
+
+  file:
+    class: logging.FileHandler
+    level: DEBUG
+    formatter: detailed
+    filename: mode_ssm.log
+    mode: a
+
+  tensorboard:
+    class: logging.handlers.RotatingFileHandler
+    level: DEBUG
+    formatter: simple
+    filename: tensorboard.log
+    maxBytes: 10485760  # 10MB
+    backupCount: 3
+
+loggers:
+  mode_ssm:
+    level: DEBUG
+    handlers: [console, file]
+    propagate: false
+
+  datasets:
+    level: DEBUG
+    handlers: [console, file]
+    propagate: false
+
+  training:
+    level: DEBUG
+    handlers: [console, file, tensorboard]
+    propagate: false
+
+  # Disable some noisy loggers
+  urllib3:
+    level: WARNING
+  requests:
+    level: WARNING
+  numba:
+    level: WARNING
+  matplotlib:
+    level: WARNING
+
+root:
+  level: INFO
+  handlers: [console]
+
+# Disable some noisy loggers
+disable_existing_loggers: false

@@ -1,0 +1,34 @@
+# Core ML Dependencies
+torch==2.2.0
+torchvision==0.17.0
+torchaudio==2.2.0
+--index-url https://download.pytorch.org/whl/cu121
+
+# MODE-SSM Specific
+# mamba-ssm==1.2.0  # Optional - using mock implementation
+# nemo_toolkit[asr]==1.22.0  # Optional - for RNN-T utilities
+
+# Configuration & Data
+hydra-core==1.3.2
+h5py==3.10.0
+pandas==2.0.0
+numpy==1.24.0
+
+# Evaluation & Metrics
+jiwer==3.0.0
+
+# Utilities
+tqdm==4.65.0
+rich==13.0.0
+wandb==0.16.0
+tensorboard==2.15.0
+
+# Testing
+pytest==7.4.0
+pytest-cov==4.1.0
+
+# Development (optional)
+black==23.0.0
+isort==5.12.0
+flake8==6.0.0
+mypy==1.5.0

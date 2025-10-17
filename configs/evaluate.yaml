@@ -1,0 +1,61 @@
+# Evaluation configuration for MODE-SSM
+defaults:
+  - _self_
+  - model: model_mode_ssm
+
+# Data configuration
+data:
+  test_path: ${oc.env:TEST_DATA_PATH,./data/test.h5}
+  min_sequence_ms: 50
+  max_sequence_ms: 30000
+  missing_channel_threshold: 0.1
+  cache_data: true
+  num_workers: 4
+
+# Model checkpoint
+checkpoint:
+  dir: ./checkpoints
+  use_best: true  # Use best checkpoint vs latest
+
+# Evaluation settings
+evaluation:
+  batch_size: 16
+  decode_mode: greedy  # greedy or beam_search
+  use_amp: true  # Use automatic mixed precision
+  show_progress: true
+  test_inference_speed: true
+
+# Output configuration
+output:
+  dir: ./evaluation_results
+  save_predictions: true
+  save_attention_weights: false
+
+# Model configuration (override defaults)
+model:
+  d_model: 512
+  d_state: 64
+  d_conv: 4
+  expand: 2
+  num_channels: 512
+  encoder_layers: 8
+  vocab_size: 40
+
+# Test-Time Adaptation (TTA) settings
+tta:
+  enabled: false  # Enable TTA during evaluation
+  session_adaptation_enabled: true
+  entropy_minimization_enabled: true
+  adaptation_lr: 0.001
+  adaptation_steps: 3
+  statistics_momentum: 0.9
+  entropy_threshold: 2.0
+  entropy_weight: 0.5
+  min_samples_for_adaptation: 5
+  adaptation_layers: ["preprocessor"]
+  confidence_threshold: 0.8
+
+# Logging
+logging:
+  level: INFO
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"

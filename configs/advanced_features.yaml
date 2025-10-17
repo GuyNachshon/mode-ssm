@@ -1,0 +1,159 @@
+# Advanced Features Configuration for MODE-SSM
+# Enables flow bridge denoising and language model fusion
+
+defaults:
+  - train
+  - _self_
+
+# Enable advanced features in model
+model:
+  use_flow_bridge: true
+  use_lm_fusion: false  # Disabled by default due to computational cost
+
+  # Flow bridge configuration
+  flow_bridge:
+    # Model architecture
+    d_model: 512
+    num_channels: 512
+    num_layers: 6
+    num_heads: 8
+    feedforward_dim: 2048
+    dropout: 0.1
+
+    # Flow bridge parameters
+    num_flow_steps: 20
+    noise_schedule: "cosine"  # linear, cosine, sigmoid
+    parameterization: "v"  # eps, x0, v (velocity parameterization)
+
+    # Denoising parameters
+    sigma_min: 0.002
+    sigma_max: 80.0
+    rho: 7.0
+
+    # Training parameters
+    loss_weighting: "snr"  # uniform, snr, snr_trunc
+    min_snr_gamma: 5.0
+
+    # Inference parameters
+    num_inference_steps: 10  # Reduced for faster inference
+    guidance_scale: 1.0
+    eta: 0.0
+
+  # Language model fusion configuration
+  lm_fusion:
+    # Language model settings
+    lm_model_name: "microsoft/DialoGPT-small"
+    lm_weight: 0.3
+    neural_weight: 0.7
+
+    # Fusion strategy
+    fusion_method: "shallow"  # shallow, deep, attention
+    beam_fusion: true
+
+    # Text processing
+    max_context_length: 128
+    context_window: 8
+    use_corpus_adaptation: false  # Disabled by default
+    corpus_path: null
+
+    # Performance settings
+    cache_size: 5000
+    batch_inference: true
+    device_map: "auto"
+
+# Training stages with denoising stage enabled
+training:
+  stages:
+    ctc_warmup:
+      enabled: true
+      epochs: 8
+      ctc_weight: 1.0
+      rnnt_weight: 0.0
+      mode_weight: 0.0
+      flow_weight: 0.0
+      train_flow_bridge: false
+
+    joint:
+      enabled: true
+      epochs: 12
+      ctc_weight: 0.4
+      rnnt_weight: 0.6
+      mode_weight: 0.1
+      flow_weight: 0.0
+      train_flow_bridge: false
+
+    mode:
+      enabled: true
+      epochs: 8
+      ctc_weight: 0.2
+      rnnt_weight: 0.6
+      mode_weight: 0.4
+      flow_weight: 0.0
+      train_flow_bridge: false
+
+    denoise:
+      enabled: true  # Enable denoising stage
+      epochs: 6
+      ctc_weight: 0.1
+      rnnt_weight: 0.5
+      mode_weight: 0.2
+      flow_weight: 0.4  # Flow bridge loss weight
+      train_flow_bridge: true
+
+# Optimizer settings for advanced features
+optimizer:
+  lr: 1e-4  # Lower learning rate for stability with advanced features
+  weight_decay: 1e-5
+  betas: [0.9, 0.99]
+
+# Scheduler settings
+scheduler:
+  type: "cosine_with_warmup"
+  warmup_steps: 1000
+  max_lr: 1e-4
+  min_lr: 1e-6
+
+# Data settings optimized for advanced features
+data:
+  batch_size: 16  # Smaller batch size due to memory requirements
+  max_sequence_ms: 3000  # Shorter sequences for flow bridge
+  cache_data: false  # Disable caching to save memory
+  num_workers: 2
+
+# Logging for advanced features
+logging:
+  level: INFO
+  log_flow_metrics: true
+  log_lm_fusion_stats: true
+  save_denoised_samples: false  # Set to true for debugging
+
+# Validation settings
+validation:
+  validate_every_n_epochs: 1
+  compute_advanced_metrics: true
+  save_attention_maps: false
+  generate_sample_outputs: true
+
+# Hardware optimization for advanced features
+hardware:
+  mixed_precision: true
+  gradient_checkpointing: true
+  compile_model: false  # May not work with complex architectures
+  memory_optimization: true
+
+# Advanced training settings
+advanced:
+  # Flow bridge specific training
+  flow_bridge_warmup_epochs: 2  # Warm up flow bridge gradually
+  flow_bridge_max_weight: 0.5   # Maximum flow loss weight
+
+  # LM fusion specific training
+  lm_fusion_start_epoch: 5      # Start LM fusion after base training
+
+  # Gradient settings
+  gradient_clipping: 1.0
+  gradient_accumulation_steps: 1
+
+  # Stability settings
+  loss_scaling: "dynamic"
+  numerical_stability_eps: 1e-8

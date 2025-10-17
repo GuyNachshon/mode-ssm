@@ -1,0 +1,97 @@
+# MODE-SSM model architecture configuration
+# @package model
+
+_target_: mode_ssm.models.mode_ssm_model.MODESSMModel
+
+# Model dimensions
+d_model: 512
+d_state: 64
+d_conv: 4
+expand: 2
+
+# Architecture components
+preprocessor:
+  _target_: mode_ssm.models.preprocessor.NeuralPreprocessor
+  num_channels: 256
+  d_model: ${model.d_model}
+  normalization_momentum: 0.1
+  channel_attention: true
+  conv_kernel_size: 7
+  dropout: 0.1
+
+encoder:
+  _target_: mode_ssm.models.ssm_encoder.MambaEncoder
+  d_model: ${model.d_model}
+  d_state: ${model.d_state}
+  d_conv: ${model.d_conv}
+  expand: ${model.expand}
+  n_layers: 8
+  bidirectional: true
+  dropout: 0.1
+  layer_norm_eps: 1e-5
+  gradient_checkpointing: false
+
+mode_head:
+  _target_: mode_ssm.models.mode_head.ModeClassificationHead
+  d_model: ${model.d_model}
+  num_modes: 2
+  dropout: 0.1
+  contrastive_learning: true
+  pooling_type: "global_avg"
+
+rnnt_decoder:
+  _target_: mode_ssm.models.rnnt_ctc_heads.RNNTDecoder
+  vocab_size: 41
+  d_model: ${model.d_model}
+  predictor_layers: 2
+  predictor_hidden_size: 512
+  joint_hidden_size: 512
+  dropout: 0.1
+  beam_size: 4
+
+ctc_decoder:
+  _target_: mode_ssm.models.rnnt_ctc_heads.CTCDecoder
+  vocab_size: 41
+  d_model: ${model.d_model}
+  dropout: 0.1
+
+# Optional components
+flow_bridge:
+  _target_: mode_ssm.models.denoise_flow.FlowDenoiser
+  d_model: ${model.d_model}
+  num_layers: 4
+  dropout: 0.1
+  enabled: false  # Only used in denoise_train stage
+
+lm_fusion:
+  _target_: mode_ssm.models.lm_fusion.LanguageModelFusion
+  vocab_size: 41
+  d_model: ${model.d_model}
+  fusion_weight: 0.3
+  enabled: false  # Optional LM rescoring
+
+# Training behavior
+mixed_precision: true
+compile_model: false  # Set to true for A100 optimization
+gradient_checkpointing: false  # Enable for memory optimization
+
+# Initialization
+init_weights: true
+init_std: 0.02
+
+# Model-specific constants
+vocab_size: 41  # 39 phonemes + blank + silence + word_boundary
+phoneme_blank_idx: 0
+phoneme_silence_idx: 39
+phoneme_word_boundary_idx: 40
+sampling_rate: 50.0  # Hz (20ms bins)
+
+# Hardware-specific optimizations
+torch_compile:
+  enabled: false  # Enable for A100 GPUs
+  mode: "default"  # "default", "reduce-overhead", "max-autotune"
+
+# Memory optimization
+activation_checkpointing:
+  enabled: false
+  checkpoint_segments: 2

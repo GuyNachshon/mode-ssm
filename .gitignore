@@ -1,0 +1,90 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+.env
+
+# PyTorch & ML
+*.pth
+*.pt
+*.ckpt
+checkpoints/
+logs/
+tensorboard_logs/
+wandb/
+
+# Neural Data (CRITICAL - never commit neural data)
+*.hdf5
+*.h5
+*.npy
+*.npz
+data/
+datasets/raw/
+datasets/processed/
+
+# Model Checkpoints & Large Files (>=50GB requirement)
+models/saved/
+saved_models/
+*.model
+*.pkl
+*.joblib
+
+# IDE & Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# System
+*.log
+*.tmp
+.cache/
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Configuration (exclude sensitive configs)
+.env*
+!.env.example
+secrets/
+*.key
+*.pem
+
+# Hydra outputs
+outputs/
+multirun/
+.hydra/
+
+# Competition specific
+submission*.csv
+results/
+experiments/
